@@ -1,192 +1,191 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
   TextInput,
-  Button,
+  Switch,
   StyleSheet,
-  ScrollView,
+  TouchableOpacity,
+  ImageBackground,
+  FlatList,
 } from "react-native";
-import { initializeApp } from "@firebase/app";
-import {
-  getAuth,
-  createUserWithEmailAndPassword,
-  signInWithEmailAndPassword,
-  onAuthStateChanged,
-  signOut,
-} from "@firebase/auth";
-import firebase from "@firebase/app";
+import { surahNames, surahDetails } from "./QuranData"; // Importing surahNames and surahDetails arrays
 
-const firebaseConfig = {
-  apiKey: "AIzaSyD8Z-uq84PBrs5axNZBHinU6ACN7ivOVWo",
-  authDomain: "signup-c7a11.firebaseapp.com",
-  projectId: "signup-c7a11",
-  storageBucket: "signup-c7a11.appspot.com",
-  messagingSenderId: "47781793888",
-  appId: "1:47781793888:web:f4221bd0638a1b56067305",
-  measurementId: "G-JE8TCPYQ7G",
-};
+const App = () => {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [isDarkMode, setIsDarkMode] = useState(false);
+  const [selectedJuz, setSelectedJuz] = useState(null);
+  const [showSurahNames, setShowSurahNames] = useState(true); // State to toggle between Surah names and Surah details
 
-const app = initializeApp(firebaseConfig);
-
-const AuthScreen = ({
-  email,
-  setEmail,
-  password,
-  setPassword,
-  isLogin,
-  setIsLogin,
-  handleAuthentication,
-}) => {
-  return (
-    <View style={styles.authContainer}>
-      <Text style={styles.title}>{isLogin ? "Sign In" : "Sign Up"}</Text>
-
-      <TextInput
-        style={styles.input}
-        value={email}
-        onChangeText={setEmail}
-        placeholder="Email"
-        autoCapitalize="none"
-      />
-      <TextInput
-        style={styles.input}
-        value={password}
-        onChangeText={setPassword}
-        placeholder="Password"
-        secureTextEntry
-      />
-      <View style={styles.buttonContainer}>
-        <Button
-          title={isLogin ? "Sign In" : "Sign Up"}
-          onPress={handleAuthentication}
-          color="#3498db"
-        />
-      </View>
-
-      <View style={styles.bottomContainer}>
-        <Text style={styles.toggleText} onPress={() => setIsLogin(!isLogin)}>
-          {isLogin
-            ? "Need an account? Sign Up"
-            : "Already have an account? Sign In"}
-        </Text>
-      </View>
-    </View>
-  );
-};
-
-const AuthenticatedScreen = ({ user, handleAuthentication }) => {
-  return (
-    <View style={styles.authContainer}>
-      <Text style={styles.title}>Welcome</Text>
-      <Text style={styles.emailText}>{user.email}</Text>
-      <Button title="Logout" onPress={handleAuthentication} color="#e74c3c" />
-    </View>
-  );
-};
-export default App = () => {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [user, setUser] = useState(null); // Track user authentication state
-  const [isLogin, setIsLogin] = useState(true);
-
-  const auth = getAuth(app);
-  useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
-      setUser(user);
-    });
-
-    return () => unsubscribe();
-  }, [auth]);
-
-  const handleAuthentication = async () => {
-    try {
-      if (user) {
-        // If user is already authenticated, log out
-        console.log("User logged out successfully!");
-        await signOut(auth);
-      } else {
-        // Sign in or sign up
-        if (isLogin) {
-          // Sign in
-          await signInWithEmailAndPassword(auth, email, password);
-          console.log("User signed in successfully!");
-        } else {
-          // Sign up
-          await createUserWithEmailAndPassword(auth, email, password);
-          console.log("User created successfully!");
-        }
-      }
-    } catch (error) {
-      console.error("Authentication error:", error.message);
-    }
+  const toggleDarkMode = () => {
+    setIsDarkMode(!isDarkMode);
   };
 
+  const handleJuzClick = (juzNumber) => {
+    setSelectedJuz(juzNumber);
+  };
+
+  const toggleDisplay = () => {
+    setShowSurahNames(!showSurahNames); // Toggle between Surah names and Surah details
+  };
+
+  const filteredSurahs = showSurahNames
+    ? surahNames
+    : surahDetails.filter((surah) => surah.juz === selectedJuz);
+
+  const renderItem = ({ item }) => (
+    <View style={styles.surahContainer}>
+      <Text style={styles.surahText}>
+        {showSurahNames
+          ? item.nameEnglish
+          : `${item.nameEnglish} - ${item.verses} verses`}
+      </Text>
+    </View>
+  );
+
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {user ? (
-        // Show user's email if user is authenticated
-        <AuthenticatedScreen
-          user={user}
-          handleAuthentication={handleAuthentication}
+    <ImageBackground
+      source={require("./assets/ALEEM.png")}
+      style={styles.backgroundImage}
+    >
+      <View style={[styles.container, isDarkMode && styles.darkMode]}>
+        <View style={styles.header}>
+          <Text style={styles.title}>Quran Search</Text>
+          <Switch value={isDarkMode} onValueChange={toggleDarkMode} />
+        </View>
+        <TextInput
+          style={styles.input}
+          placeholder="Search Surah"
+          value={searchQuery}
+          onChangeText={setSearchQuery}
         />
-      ) : (
-        // Show sign-in or sign-up form if user is not authenticated
-        <AuthScreen
-          email={email}
-          setEmail={setEmail}
-          password={password}
-          setPassword={setPassword}
-          isLogin={isLogin}
-          setIsLogin={setIsLogin}
-          handleAuthentication={handleAuthentication}
+        <View style={styles.buttonsContainer}>
+          <TouchableOpacity
+            style={[styles.button, !showSurahNames && styles.selectedButton]}
+            onPress={() => setShowSurahNames(true)}
+          >
+            <Text style={styles.buttonText}>Surah Names</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.button, showSurahNames && styles.selectedButton]}
+            onPress={() => setShowSurahNames(false)}
+          >
+            <Text style={styles.buttonText}>Juzz</Text>
+          </TouchableOpacity>
+        </View>
+        {!showSurahNames && (
+          <View style={styles.juzContainer}>
+            {[...Array(30).keys()].map((juzNumber) => (
+              <TouchableOpacity
+                key={juzNumber + 1}
+                style={[
+                  styles.juzButton,
+                  selectedJuz === juzNumber + 1 && styles.selectedJuz,
+                ]}
+                onPress={() => handleJuzClick(juzNumber + 1)}
+              >
+                <Text style={styles.juzButtonText}>Juz {juzNumber + 1}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        )}
+        <FlatList
+          data={filteredSurahs.filter(
+            (surah) =>
+              surah.nameEnglish
+                .toLowerCase()
+                .includes(searchQuery.toLowerCase()) ||
+              surah.nameArabic.includes(searchQuery)
+          )}
+          renderItem={renderItem}
+          keyExtractor={(item) => item.id}
+          style={styles.flatList}
         />
-      )}
-    </ScrollView>
+      </View>
+    </ImageBackground>
   );
 };
+
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 16,
-    backgroundColor: "#f0f0f0",
+    flex: 1,
+    padding: 20,
   },
-  authContainer: {
-    width: "80%",
-    maxWidth: 400,
-    backgroundColor: "#fff",
-    padding: 16,
-    borderRadius: 8,
-    elevation: 3,
+  darkMode: {
+    backgroundColor: "#333",
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 20,
   },
   title: {
     fontSize: 24,
-    marginBottom: 16,
-    textAlign: "center",
+    fontWeight: "bold",
   },
   input: {
-    height: 40,
-    borderColor: "#ddd",
     borderWidth: 1,
-    marginBottom: 16,
-    padding: 8,
-    borderRadius: 4,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    padding: 10,
+    marginBottom: 10,
   },
-  buttonContainer: {
-    marginBottom: 16,
+  buttonsContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
   },
-  toggleText: {
-    color: "#3498db",
-    textAlign: "center",
+  button: {
+    flex: 1,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginRight: 5,
+    alignItems: "center",
   },
-  bottomContainer: {
-    marginTop: 20,
+  selectedButton: {
+    backgroundColor: "#ccc",
   },
-  emailText: {
+  buttonText: {
+    fontSize: 16,
+  },
+  juzContainer: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 10,
+  },
+  juzButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+  },
+  selectedJuz: {
+    backgroundColor: "#ccc",
+  },
+  juzButtonText: {
+    fontSize: 16,
+  },
+  surahContainer: {
+    padding: 10,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 5,
+    marginBottom: 10,
+  },
+  surahText: {
     fontSize: 18,
-    textAlign: "center",
-    marginBottom: 20,
+  },
+  flatList: {
+    flex: 1,
+  },
+  backgroundImage: {
+    flex: 1,
+    resizeMode: "cover",
   },
 });
+
+export default App;
